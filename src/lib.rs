@@ -16,10 +16,10 @@ pub enum TokenFactoryMsg {
     },
     /// ChangeAdmin changes the admin for a factory denom.
     /// If the NewAdminAddress is empty, the denom has no admin.
-    ChangeAdmin { denom: String, new_admin: Addr },
+    ChangeAdmin { denom: String, new_admin_address: Addr },
     /// Contracts can mint native tokens for an existing factory denom
     /// that they are the admin of.
-    Mint {
+    MintTokens {
         denom: String,
         amount: Uint256,
         mint_to_address: Addr,
@@ -27,13 +27,13 @@ pub enum TokenFactoryMsg {
     /// Contracts can burn native tokens for an existing factory denom
     /// that they are the admin of.
     /// Currently, the burn from address must be the admin contract.
-    Burn {
+    BurnTokens {
         denom: String,
         amount: Uint256,
         burn_from_address: Addr,
     },
     /// Sets the metadata on a denom which the contract controls
-    SetDenomMetadata { metadata: DenomMetadata },
+    SetMetadata { metadata: DenomMetadata },
     /// Forces a transfer of tokens from one address to another.
     ForceTransfer {
         denom: String,
