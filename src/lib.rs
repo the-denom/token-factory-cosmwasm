@@ -16,7 +16,10 @@ pub enum TokenFactoryMsg {
     },
     /// ChangeAdmin changes the admin for a factory denom.
     /// If the NewAdminAddress is empty, the denom has no admin.
-    ChangeAdmin { denom: String, new_admin_address: Addr },
+    ChangeAdmin {
+        denom: String,
+        new_admin_address: Addr,
+    },
     /// Contracts can mint native tokens for an existing factory denom
     /// that they are the admin of.
     MintTokens {
@@ -130,19 +133,89 @@ pub struct DenomCreationFee {
     pub denom: String,
 }
 
+pub trait CreateTokenFactoryMsg: From<TokenFactoryMsg> {
+    fn token_factory_create_denom(
+        subdenom: String,
+        metadata: Option<DenomMetadata>,
+    ) -> StdResult<Self> {
+        Ok(TokenFactoryMsg::CreateDenom { subdenom, metadata }.into())
+    }
+    fn token_factory_change_admin(denom: String, new_admin_address: Addr) -> StdResult<Self> {
+        Ok(TokenFactoryMsg::ChangeAdmin {
+            denom,
+            new_admin_address,
+        }
+        .into())
+    }
+    fn token_factory_mint_tokens(
+        denom: String,
+        amount: Uint256,
+        mint_to_address: Addr,
+    ) -> StdResult<Self> {
+        Ok(TokenFactoryMsg::MintTokens {
+            denom,
+            amount,
+            mint_to_address,
+        }
+        .into())
+    }
+    fn token_factory_burn_tokens(
+        denom: String,
+        amount: Uint256,
+        burn_from_address: Addr,
+    ) -> StdResult<Self> {
+        Ok(TokenFactoryMsg::BurnTokens {
+            denom,
+            amount,
+            burn_from_address,
+        }
+        .into())
+    }
+    fn token_factory_set_metadata(metadata: DenomMetadata) -> StdResult<Self> {
+        Ok(TokenFactoryMsg::SetMetadata { metadata }.into())
+    }
+    fn token_factory_force_transfer(
+        denom: String,
+        from_address: Addr,
+        to_address: Addr,
+        amount: Uint256,
+    ) -> StdResult<Self> {
+        Ok(TokenFactoryMsg::ForceTransfer {
+            denom,
+            from_address,
+            to_address,
+            amount,
+        }
+        .into())
+    }
+}
+
+impl<T> CreateTokenFactoryMsg for T where T: From<TokenFactoryMsg> {}
+
 pub trait TokenFactoryQuerier {
-    fn query_full_denom(
+    fn query_token_factory_full_denom(
         &self,
         subdenom: String,
         creator_addr: Addr,
     ) -> StdResult<FullDenomResponse>;
+
+    fn query_token_factory_admin(&self, denom: String) -> StdResult<AdminResponse>;
+
+    fn query_token_factory_metadata(&self, denom: String) -> StdResult<MetadataResponse>;
+
+    fn query_token_factory_denoms_by_creator(
+        &self,
+        creator: Addr,
+    ) -> StdResult<DenomsByCreatorResponse>;
+
+    fn query_token_factory_params(&self) -> StdResult<TokenParamsResponse>;
 }
 
 impl<'a, T> TokenFactoryQuerier for QuerierWrapper<'a, T>
 where
     T: CustomQuery + From<TokenFactoryQuery>,
 {
-    fn query_full_denom(
+    fn query_token_factory_full_denom(
         &self,
         subdenom: String,
         creator_addr: Addr,
@@ -152,6 +225,29 @@ where
             creator_addr,
         }
         .into();
+        self.query(&custom_query.into())
+    }
+
+    fn query_token_factory_admin(&self, denom: String) -> StdResult<AdminResponse> {
+        let custom_query: T = TokenFactoryQuery::Admin { denom }.into();
+        self.query(&custom_query.into())
+    }
+
+    fn query_token_factory_metadata(&self, denom: String) -> StdResult<MetadataResponse> {
+        let custom_query: T = TokenFactoryQuery::Metadata { denom }.into();
+        self.query(&custom_query.into())
+    }
+
+    fn query_token_factory_denoms_by_creator(
+        &self,
+        creator: Addr,
+    ) -> StdResult<DenomsByCreatorResponse> {
+        let custom_query: T = TokenFactoryQuery::DenomsByCreator { creator }.into();
+        self.query(&custom_query.into())
+    }
+
+    fn query_token_factory_params(&self) -> StdResult<TokenParamsResponse> {
+        let custom_query: T = TokenFactoryQuery::Params {}.into();
         self.query(&custom_query.into())
     }
 }
